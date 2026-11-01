@@ -1,23 +1,23 @@
-# Blueprint de Render: plan GRATIS + base de datos en Supabase (Postgres).
-# New + > Blueprint, y elige tu repositorio. Guía: docs/11_RENDER_SUPABASE.md
 services:
-  - type: web
-    name: unidad17
-    runtime: docker
-    plan: free
-    healthCheckPath: /salud
-    envVars:
-      - key: DATABASE_URL          "postgresql://postgres.wkkwwtzyygcalaapyjdh:Unidad_GPS_17.@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
-        sync: false
-      - key: UNIDAD17_URL_PUBLICA  "https://unidad17.onrender.com"
-        sync: false
-      - key: UNIDAD17_CLAVE_API    # clave de enrolamiento de los agentes
-        generateValue: true
-      - key: UNIDAD17_CLAVE_SECRETA
-        generateValue: true
-      - key: UNIDAD17_CLAVE_ADMIN  # contraseña inicial de "admin" (se obliga a cambiarla)
-        generateValue: true
-      - key: UNIDAD17_PROXY
-        value: "1"
-      - key: UNIDAD17_COOKIE_SEGURA
-        value: "1"
+- type: web
+  name: unidad17
+  runtime: docker
+  plan: free
+  healthCheckPath: /salud
+  envVars:
+    - key: DATABASE_URL
+      value: "postgresql://postgres.wkkwwtzyygcalaapyjdh:Unidad_GPS_17.@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
+      sync: false
+    - key: UNIDAD17_URL_PUBLICA
+      value: "https://unidad17.onrender.com"
+      sync: false
+    - key: UNIDAD17_CLAVE_API
+      generateValue: true
+    - key: UNIDAD17_CLAVE_SECRETA
+      generateValue: true
+    - key: UNIDAD17_CLAVE_ADMIN
+      generateValue: true
+    - key: UNIDAD17_PROXY
+      value: "1"
+    - key: UNIDAD17_COOKIE_SEGURA
+      value: "true"
