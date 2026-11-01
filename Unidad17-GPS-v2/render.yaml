@@ -7,9 +7,9 @@ services:
     plan: free
     healthCheckPath: /salud
     envVars:
-      - key: DATABASE_URL          # cadena de conexión de Supabase (Session pooler)
+      - key: DATABASE_URL          postgresql://postgres.wkkwwtzyygcalaapyjdh:Unidad_GPS_17.@aws-0-us-east-1.pooler.supabase.com:5432/postgres
         sync: false
-      - key: UNIDAD17_URL_PUBLICA  # https://TU-SERVICIO.onrender.com
+      - key: UNIDAD17_URL_PUBLICA  https://unidad17.onrender.com
         sync: false
       - key: UNIDAD17_CLAVE_API    # clave de enrolamiento de los agentes
         generateValue: true
