@@ -1,0 +1,21 @@
+{% from "_iconos.html" import icono %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ codigo }} · {{ titulo_panel }}</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/favicon.svg') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/estilos.css') }}">
+</head>
+<body class="cuerpo-error">
+{% include "_sprite.html" %}
+<main class="error-caja">
+  <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="" class="login-logo">
+  <p class="error-codigo">{{ codigo }}</p>
+  <h1>No pudimos mostrar esta página</h1>
+  <p class="error-mensaje">{{ mensaje }}</p>
+  <a class="boton boton-principal-mini" href="{{ url_for('login') }}">{{ icono('chevron') }} Volver al inicio</a>
+</main>
+</body>
+</html>

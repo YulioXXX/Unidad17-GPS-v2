@@ -1,0 +1,3 @@
+# El agente funciona solo con la biblioteca estandar de Python.
+# Opcional: GPS nativo de Windows (agrega ~50 MB al .exe)
+# winsdk>=1.0.0b10

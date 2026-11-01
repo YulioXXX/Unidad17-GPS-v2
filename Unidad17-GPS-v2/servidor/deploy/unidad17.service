@@ -1,0 +1,16 @@
+[Unit]
+Description=Unidad 17 - Panel de control
+After=network.target
+
+[Service]
+Type=simple
+User=unidad17
+Group=unidad17
+WorkingDirectory=/opt/unidad17/servidor
+Environment=UNIDAD17_DB=/opt/unidad17/servidor/datos/unidad17.db
+ExecStart=/opt/unidad17/venv/bin/gunicorn --workers 2 --threads 4 --timeout 120 --bind 127.0.0.1:5000 wsgi:application
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,61 @@
+{% from "_iconos.html" import icono %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Iniciar sesión · {{ titulo_panel }}</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/favicon.svg') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/estilos.css') }}">
+</head>
+<body class="cuerpo-login">
+{% include "_sprite.html" %}
+<main class="login-envoltura">
+  <section class="login-tarjeta">
+    <aside class="login-lateral">
+      <img class="login-logo" src="{{ url_for('static', filename='img/logo.svg') }}" alt="">
+      <div>
+        <h2>{{ titulo_panel }}</h2>
+        <p>{{ subtitulo_panel }}</p>
+        <ul class="login-lista">
+          <li>{{ icono('satelite') }} Ubicación de cada equipo</li>
+          <li>{{ icono('reloj') }} Historial de conexiones</li>
+          <li>{{ icono('escudo') }} Acceso protegido</li>
+        </ul>
+      </div>
+      <span class="login-lateral-pie">Uso interno · Personal autorizado</span>
+    </aside>
+
+    <div class="login-formulario">
+      <h1>Iniciar sesión</h1>
+      <p class="login-bajada">Introduce tus credenciales para acceder al panel.</p>
+
+      {% if error %}
+      <div class="alerta error">{{ icono('alerta') }}<span>{{ error }}</span></div>
+      {% endif %}
+
+      <form method="post" action="{{ url_for('entrar') }}">
+        <label class="campo-etiqueta" for="usuario">Usuario</label>
+        <div class="campo">
+          {{ icono('usuario') }}
+          <input id="usuario" name="usuario" type="text" value="{{ usuario_intento }}" placeholder="admin" required autofocus autocomplete="username">
+        </div>
+
+        <label class="campo-etiqueta" for="clave">Contraseña</label>
+        <div class="campo">
+          {{ icono('candado') }}
+          <input id="clave" name="clave" type="password" placeholder="••••••••" required autocomplete="current-password">
+          <button type="button" class="ojo-boton" id="verClave" aria-label="Mostrar contraseña">{{ icono('ojo') }}</button>
+        </div>
+
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+        <button class="boton-principal" type="submit">Entrar {{ icono('chevron') }}</button>
+      </form>
+
+      <p class="login-pie">{{ titulo_panel }} · v{{ version }}</p>
+    </div>
+  </section>
+</main>
+<script src="{{ url_for('static', filename='js/panel.js') }}"></script>
+</body>
+</html>
