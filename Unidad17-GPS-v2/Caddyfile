@@ -1,8 +1,0 @@
-# HTTPS automático (Let's Encrypt). DOMINIO viene del archivo .env
-{$DOMINIO} {
-    encode gzip
-    request_body {
-        max_size 320MB
-    }
-    reverse_proxy app:5000
-}

@@ -1,6 +1,0 @@
-# Caddy hace HTTPS automático con Let's Encrypt.
-# Cambia el dominio y recarga:  sudo systemctl reload caddy
-panel.tudominio.com {
-    encode gzip
-    reverse_proxy 127.0.0.1:5000
-}
