@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% from "_iconos.html" import icono %}
+
+{% block titulo_doc %}Ajustes{% endblock %}
+{% block pagina %}ajustes{% endblock %}
+{% block encabezado %}Ajustes{% endblock %}
+{% block subtitulo %}Configuración del agente y seguridad del panel{% endblock %}
+
+{% block contenido %}
+{% with mensajes = get_flashed_messages(with_categories=true) %}
+  {% for categoria, mensaje in mensajes %}
+  <div class="alerta {{ 'ok' if categoria == 'ok' else 'error' }}">
+    {{ icono('check' if categoria == 'ok' else 'alerta') }}<span>{{ mensaje }}</span>
+  </div>
+  {% endfor %}
+{% endwith %}
+
+<section class="rejilla-ajustes">
+  <article class="tarjeta ancha">
+    <div class="tarjeta-cabecera compacta">
+      <div><h2>Conexión del agente</h2><p>Datos que debes copiar en cada equipo</p></div>
+    </div>
+
+    <div class="bloque-campo">
+      <span class="campo-etiqueta">URL del servidor</span>
+      <div class="campo-copia">
+        <code>{{ url_base }}</code>
+        <button type="button" class="boton boton-mini" data-copiar="{{ url_base }}">{{ icono('copiar') }} Copiar</button>
+      </div>
+      <small class="ayuda">Desde otro equipo de la red: <code>http://{{ ip_lan }}:{{ puerto }}</code>. Ambos equipos deben estar en la misma red y el puerto debe estar permitido en el firewall.</small>
+    </div>
+
+    <div class="bloque-campo">
+      <span class="campo-etiqueta">Clave de enrolamiento</span>
+      <div class="campo-copia">
+        <code>{{ clave_api }}</code>
+        <button type="button" class="boton boton-mini" data-copiar="{{ clave_api }}">{{ icono('copiar') }} Copiar</button>
+      </div>
+      <small class="ayuda">Cada agente la usa una sola vez para recibir su token propio; después reporta solo con ese token. No la publiques.</small>
+    </div>
+
+    <div class="bloque-campo">
+      <span class="campo-etiqueta">Contenido de <code>cliente/config.json</code></span>
+      <pre class="bloque-codigo"><code>{{ ejemplo }}</code></pre>
+    </div>
+  </article>
+
+  <article class="tarjeta ancha">
+    <div class="tarjeta-cabecera compacta">
+      <div><h2>Autenticación de agentes</h2><p>Token propio por equipo en lugar de una clave compartida</p></div>
+      {% if clave_global %}
+      <span class="insignia neutra">Clave global activa</span>
+      {% else %}
+      <span class="insignia gps">{{ icono('check') }} Solo tokens</span>
+      {% endif %}
+    </div>
+    <p class="texto">Cada equipo recibe su propio token al enrolarse. Puedes revocarlo desde la ficha del equipo sin afectar a los demás, y un token solo sirve para el equipo al que se entregó.</p>
+
+    {% if clave_global %}
+      {% if sin_token %}
+      <div class="alerta error">{{ icono('alerta') }}<span>{{ sin_token }} equipo{{ 's' if sin_token != 1 }} todavía reporta{{ 'n' if sin_token != 1 }} con la clave compartida. Cuando todos se hayan actualizado (agente 1.0.11 o superior), desactiva la clave global.</span></div>
+      {% else %}
+      <p class="ayuda">{{ icono('check') }} Todos los equipos ya tienen token: puedes desactivar la clave global.</p>
+      {% endif %}
+      <form method="post" action="{{ url_for('ajustes') }}" class="formulario">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+        <input type="hidden" name="accion" value="clave_global">
+        <input type="hidden" name="valor" value="0">
+        <button class="boton boton-principal-mini" type="submit">{{ icono('escudo') }} Desactivar la clave global para reportar</button>
+      </form>
+    {% else %}
+      <p class="ayuda">La clave compartida solo sirve para enrolar equipos nuevos; ya no permite reportar ni leer la configuración.</p>
+      <form method="post" action="{{ url_for('ajustes') }}" class="formulario">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+        <input type="hidden" name="accion" value="clave_global">
+        <input type="hidden" name="valor" value="1">
+        <button class="boton boton-suave" type="submit">Volver a permitir la clave global (agentes antiguos)</button>
+      </form>
+    {% endif %}
+  </article>
+
+  <article class="tarjeta ancha">
+    <div class="tarjeta-cabecera compacta">
+      <div><h2>Firma de actualizaciones</h2><p>Garantiza que un paquete lo publicó quien tiene la clave privada</p></div>
+      {% if clave_firma %}
+      <span class="insignia gps">{{ icono('check') }} Firma exigida</span>
+      {% else %}
+      <span class="insignia neutra">Sin configurar</span>
+      {% endif %}
+    </div>
+    <p class="texto">La clave privada se guarda fuera de este servidor (en tu equipo de confianza). Aquí solo se registra la clave pública, para rechazar al subir cualquier paquete sin firma válida. Los agentes llevan la misma clave pública y verifican la firma antes de actualizarse.</p>
+    {% if clave_firma %}<p class="ayuda">Clave pública actual: <code>{{ clave_firma[:16] }}…{{ clave_firma[-8:] }}</code></p>{% endif %}
+
+    <form method="post" action="{{ url_for('ajustes') }}" class="formulario">
+      <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+      <input type="hidden" name="accion" value="guardar_firma">
+      <label class="campo-etiqueta" for="clave_publica_firma">Clave pública (64 caracteres hexadecimales)</label>
+      <div class="campo">{{ icono('candado') }}<input id="clave_publica_firma" name="clave_publica_firma" type="text" pattern="[0-9a-fA-F]{64}" placeholder="firma_publica.txt" autocomplete="off" spellcheck="false" required></div>
+      <button class="boton boton-principal-mini" type="submit">{{ icono('escudo') }} Guardar clave pública</button>
+    </form>
+
+    {% if clave_firma %}
+    <form method="post" action="{{ url_for('ajustes') }}" class="formulario">
+      <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+      <input type="hidden" name="accion" value="borrar_firma">
+      <button class="boton boton-suave" type="submit">{{ icono('x') }} Quitar clave</button>
+    </form>
+    {% endif %}
+    <p class="ayuda">Cómo generar las claves y firmar cada versión: <code>docs/08_SEGURIDAD.md</code>.</p>
+  </article>
+
+  <article class="tarjeta ancha">
+    <div class="tarjeta-cabecera compacta">
+      <div><h2>Google Geolocation (Wi-Fi)</h2><p>Triangulación por redes Wi-Fi cuando el GPS de Windows no está disponible</p></div>
+      {% if google_configurada %}
+      <span class="insignia gps">{{ icono('check') }} Clave configurada</span>
+      {% else %}
+      <span class="insignia neutra">Sin configurar</span>
+      {% endif %}
+    </div>
+    <p class="texto">El agente escanea las redes cercanas con <code>netsh wlan</code> y consulta la <strong>Geolocation API</strong> de Google. Si no hay clave o el escaneo falla, sigue con el GPS de Windows y, como último recurso, la IP.</p>
+    {% if google_configurada %}<p class="ayuda">Clave actual: <code>{{ google_vista }}</code></p>{% endif %}
+
+    <form method="post" action="{{ url_for('ajustes') }}" class="formulario">
+      <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+      <input type="hidden" name="accion" value="guardar_google">
+      <label class="campo-etiqueta" for="google_api_key">API Key de Google Cloud</label>
+      <div class="campo">{{ icono('candado') }}<input id="google_api_key" name="google_api_key" type="text" placeholder="AIza..." autocomplete="off" spellcheck="false" required></div>
+      <button class="boton boton-principal-mini" type="submit">{{ icono('escudo') }} Guardar clave</button>
+    </form>
+
+    {% if google_configurada %}
+    <form method="post" action="{{ url_for('ajustes') }}" class="formulario">
+      <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+      <input type="hidden" name="accion" value="borrar_google">
+      <button class="boton boton-suave" type="submit">{{ icono('x') }} Quitar clave</button>
+    </form>
+    {% endif %}
+
+    <p class="ayuda">Habilita la “Geolocation API” en Google Cloud Console y restringe la clave a esa API. Se guarda en la base de datos y solo se entrega a los agentes autenticados.</p>
+  </article>
+
+  <article class="tarjeta">
+    <div class="tarjeta-cabecera compacta">
+      <div><h2>Seguridad</h2><p>Credenciales de acceso al panel</p></div>
+    </div>
+
+    <form method="post" action="{{ url_for('ajustes') }}" class="formulario">
+      <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+      <input type="hidden" name="accion" value="cambiar_clave">
+
+      <label class="campo-etiqueta" for="actual">Contraseña actual</label>
+      <div class="campo">{{ icono('candado') }}<input id="actual" name="actual" type="password" required autocomplete="current-password"></div>
+
+      <label class="campo-etiqueta" for="nueva">Nueva contraseña</label>
+      <div class="campo">{{ icono('candado') }}<input id="nueva" name="nueva" type="password" minlength="8" required autocomplete="new-password"></div>
+
+      <label class="campo-etiqueta" for="repetir">Repetir nueva contraseña</label>
+      <div class="campo">{{ icono('candado') }}<input id="repetir" name="repetir" type="password" minlength="8" required autocomplete="new-password"></div>
+
+      <button class="boton boton-principal-mini" type="submit">{{ icono('escudo') }} Cambiar contraseña</button>
+    </form>
+
+    <div class="separador"></div>
+    <p class="ayuda">La sesión dura 8 horas. Después de cambiar la contraseña, los demás accesos siguen activos hasta que caduquen.</p>
+  </article>
+
+  <article class="tarjeta">
+    <div class="tarjeta-cabecera compacta">
+      <div><h2>Servidor</h2><p>Información de esta instalación</p></div>
+    </div>
+    <dl class="lista-datos">
+      <div><dt>Versión</dt><dd>v{{ version }}</dd></div>
+      <div><dt>Base de datos</dt><dd class="mono ruta">{{ ruta_db }}</dd></div>
+      <div><dt>Puerto</dt><dd>{{ puerto }}</dd></div>
+      <div><dt>Equipo sin conexión tras</dt><dd>{{ minutos_offline }} minutos</dd></div>
+      <div><dt>Zona horaria</dt><dd>Hora local del servidor</dd></div>
+    </dl>
+    <p class="ayuda">Los datos se guardan en SQLite. Haz copias periódicas de la carpeta <code>datos</code>.</p>
+  </article>
+
+  <article class="tarjeta">
+    <div class="tarjeta-cabecera compacta">
+      <div><h2>Uso responsable</h2><p>Privacidad y consentimiento</p></div>
+    </div>
+    <p class="texto">Este panel recibe la ubicación y los datos básicos de equipos dados de alta con el agente. El agente se ejecuta con una ventana visible y avisa al usuario la primera vez: no está diseñado para funcionar de forma oculta.</p>
+    <p class="texto">Úsalo solo en equipos de tu organización o con autorización expresa de la persona que los utiliza. Consulta <code>docs/03_LEGAL_Y_PRIVACIDAD.md</code> antes de desplegarlo.</p>
+    <p class="texto tenue">No incluye captura de pantalla, control remoto, persistencia oculta ni evasión de herramientas de seguridad.</p>
+  </article>
+</section>
+{% endblock %}

@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% from "_iconos.html" import icono %}
+
+{% block titulo_doc %}Actualizaciones{% endblock %}
+{% block pagina %}actualizaciones{% endblock %}
+{% block encabezado %}Actualizaciones{% endblock %}
+{% block subtitulo %}Publica nuevas versiones y mantén el agente y el panel al día{% endblock %}
+
+{% block contenido %}
+{% with mensajes = get_flashed_messages(with_categories=true) %}
+  {% for categoria, mensaje in mensajes %}
+  <div class="alerta {{ 'ok' if categoria == 'ok' else 'error' }}">
+    {{ icono('check' if categoria == 'ok' else 'alerta') }}<span>{{ mensaje }}</span>
+  </div>
+  {% endfor %}
+{% endwith %}
+
+<section class="rejilla-stats">
+  <article class="stat">
+    <span class="stat-icono acento">{{ icono('monitor') }}</span>
+    <div class="stat-datos">
+      <span class="stat-etiqueta">Panel en ejecución</span>
+      <strong class="stat-valor">v{{ actual }}</strong>
+      <span class="stat-nota">este servidor</span>
+    </div>
+  </article>
+  <article class="stat">
+    <span class="stat-icono violeta">{{ icono('descargar') }}</span>
+    <div class="stat-datos">
+      <span class="stat-etiqueta">Panel publicado</span>
+      <strong class="stat-valor">{{ 'v' ~ panel_publicado.version if panel_publicado else '—' }}</strong>
+      <span class="stat-nota">{{ 'actualización disponible' if hay_panel_nuevo else ('sin publicar' if not panel_publicado else 'sin cambios pendientes') }}</span>
+    </div>
+  </article>
+  <article class="stat">
+    <span class="stat-icono verde">{{ icono('cpu') }}</span>
+    <div class="stat-datos">
+      <span class="stat-etiqueta">Agente publicado</span>
+      <strong class="stat-valor">{{ 'v' ~ agente_publicado.version if agente_publicado else '—' }}</strong>
+      <span class="stat-nota">{{ agente_publicado.fecha[:10] if agente_publicado else 'sin publicar' }}</span>
+    </div>
+  </article>
+</section>
+
+<section class="rejilla-ajustes">
+  <article class="tarjeta">
+    <div class="tarjeta-cabecera compacta">
+      <div><h2>Publicar una versión</h2><p>Sube el .exe (o .zip) y su firma; se calcula el SHA-256 y se verifica la firma</p></div>
+      {% if exige_firma %}<span class="insignia gps">{{ icono('escudo') }} Firma obligatoria</span>
+      {% else %}<span class="insignia neutra">Sin clave de firma</span>{% endif %}
+    </div>
+
+    <form method="post" action="{{ url_for('actualizaciones') }}" enctype="multipart/form-data" class="formulario">
+      <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+      <input type="hidden" name="accion" value="subir">
+
+      <label class="campo-etiqueta" for="tipo">Componente</label>
+      <div class="campo">
+        {{ icono('monitor') }}
+        <select id="tipo" name="tipo" class="selector">
+          <option value="agente">Agente (cliente)</option>
+          <option value="panel">Panel (servidor)</option>
+        </select>
+      </div>
+
+      <label class="campo-etiqueta" for="version">Versión</label>
+      <div class="campo">
+        {{ icono('descargar') }}
+        <input id="version" name="version" type="text" placeholder="1.0.11" pattern="\d+\.\d+\.\d+" required>
+      </div>
+
+      <label class="campo-etiqueta" for="notas">Notas (opcional)</label>
+      <div class="campo">
+        {{ icono('panel') }}
+        <input id="notas" name="notas" type="text" placeholder="Cambios de esta versión" maxlength="300">
+      </div>
+
+      <label class="campo-etiqueta" for="archivo">Archivo</label>
+      <div class="campo">
+        {{ icono('descargar') }}
+        <input id="archivo" name="archivo" type="file" accept=".exe,.zip" required>
+      </div>
+
+      <label class="campo-etiqueta" for="firma">Firma (.firma){% if not exige_firma %} · opcional{% endif %}</label>
+      <div class="campo">
+        {{ icono('escudo') }}
+        <input id="firma" name="firma" type="file" accept=".firma,.sig,.txt" {{ 'required' if exige_firma }}>
+      </div>
+
+      {% if puede_autoactualizar %}
+      <label class="casilla">
+        <input type="checkbox" name="actualizar_ahora" value="1" checked>
+        <span>Si es el panel, reiniciarlo al publicar (conserva configuración y datos)</span>
+      </label>
+      {% endif %}
+
+      <button class="boton boton-principal-mini" type="submit">{{ icono('descargar') }} Publicar versión</button>
+    </form>
+
+    <p class="ayuda">El agente consulta el manifiesto al arrancar y cada 6 horas. Comprueba la firma con su clave pública, descarga el paquete, verifica el SHA-256 y se reemplaza solo. La firma se genera fuera del servidor con <code>herramientas/firmar_paquete.py</code> (<code>docs/08_SEGURIDAD.md</code>).</p>
+  </article>
+
+  <article class="tarjeta">
+    <div class="tarjeta-cabecera compacta">
+      <div><h2>Actualización del panel</h2><p>Reemplazo del .exe en ejecución</p></div>
+    </div>
+
+    {% if panel_publicado %}
+      <dl class="lista-datos">
+        <div><dt>Versión publicada</dt><dd>v{{ panel_publicado.version }}</dd></div>
+        <div><dt>Publicada</dt><dd>{{ panel_publicado.fecha[:10] }}</dd></div>
+        <div><dt>SHA-256</dt><dd class="mono">{{ panel_publicado.sha256[:24] }}…</dd></div>
+        <div><dt>Tamaño</dt><dd>{{ (panel_publicado.tamano / 1048576)|round(1) }} MB</dd></div>
+      </dl>
+
+      {% if hay_panel_nuevo %}
+        {% if puede_autoactualizar %}
+        <form method="post" action="{{ url_for('actualizaciones') }}" class="formulario">
+          <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+          <input type="hidden" name="accion" value="actualizar_panel">
+          <button class="boton boton-principal-mini" type="submit">{{ icono('actualizar') }} Actualizar el panel ahora</button>
+        </form>
+        <p class="ayuda">El panel se detiene, reemplaza su .exe, conserva <code>config.json</code> y la carpeta <code>datos</code>, y vuelve a arrancar.</p>
+        {% else %}
+        <p class="ayuda">Estás ejecutando el panel desde código. En Windows usa el <code>.exe</code> para el reinicio automático; en Linux aplica el paquete y reinicia el servicio (<code>docs/06_DESPLIEGUE.md</code>).</p>
+        {% endif %}
+      {% else %}
+        <p class="ayuda">{{ icono('check') }} El panel está al día.</p>
+      {% endif %}
+    {% else %}
+      <p class="texto">Todavía no has publicado una versión del panel.</p>
+    {% endif %}
+
+    <div class="separador"></div>
+    <p class="ayuda">Manifiesto que consultan los agentes:<br><code>{{ url_version }}</code></p>
+  </article>
+</section>
+
+<section class="tarjeta">
+  <div class="tarjeta-cabecera compacta">
+    <div><h2>Paquetes publicados</h2><p>Archivos disponibles en la carpeta de actualizaciones</p></div>
+  </div>
+
+  {% if archivos %}
+  <div class="tabla-envoltura">
+    <table>
+      <thead>
+        <tr><th>Archivo</th><th>Componente</th><th>Versión</th><th>Tamaño</th><th>Fecha</th><th>SHA-256</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for item in archivos %}
+        {% set entrada = manifiesto[item.publicado] if item.publicado else None %}
+        <tr>
+          <td class="mono">{{ item.archivo }}</td>
+          <td>{{ item.publicado|capitalize if item.publicado else '—' }}</td>
+          <td>{{ entrada.version if entrada else '—' }}</td>
+          <td>{% if item.tamano >= 1048576 %}{{ (item.tamano / 1048576)|round(1) }} MB{% else %}{{ (item.tamano / 1024)|round(0)|int }} KB{% endif %}</td>
+          <td>{{ item.fecha[:10] }}</td>
+          <td class="mono">{{ entrada.sha256[:16] ~ '…' if entrada else '—' }}</td>
+          <td class="celda-accion">
+            <a class="boton boton-mini" href="{{ url_for('descargar_actualizacion', nombre=item.archivo) }}">{{ icono('descargar') }}</a>
+            {% if item.publicado %}
+            <form method="post" action="{{ url_for('actualizaciones') }}" class="en-linea">
+              <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+              <input type="hidden" name="accion" value="eliminar">
+              <input type="hidden" name="tipo" value="{{ item.publicado }}">
+              <button class="boton boton-mini boton-peligro" type="submit">{{ icono('x') }}</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="vacio compacto">
+    <span class="vacio-icono">{{ icono('descargar') }}</span>
+    <p>Sin paquetes todavía. Publica el primer <code>.exe</code> del agente para que los equipos se actualicen solos.</p>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

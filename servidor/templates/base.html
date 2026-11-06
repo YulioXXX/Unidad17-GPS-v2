@@ -1,0 +1,71 @@
+{% from "_iconos.html" import icono %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo_doc %}Panel{% endblock %} · {{ titulo_panel }}</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/favicon.svg') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/estilos.css') }}">
+  {% block head_extra %}{% endblock %}
+</head>
+<body data-pagina="{% block pagina %}panel{% endblock %}">
+{% include "_sprite.html" %}
+<div class="aplicacion">
+  <aside class="barra-lateral" id="barra">
+    <a class="marca" href="{{ url_for('panel') }}">
+      <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="Unidad 17">
+      <span class="marca-texto"><strong>{{ titulo_panel }}</strong><small>{{ subtitulo_panel }}</small></span>
+    </a>
+
+    <nav class="navegacion" aria-label="Navegación principal">
+      <p class="nav-titulo">Control</p>
+      <a class="nav-item {{ 'activo' if activo == 'panel' }}" href="{{ url_for('panel') }}">{{ icono('panel') }}<span>Panel general</span></a>
+      <a class="nav-item {{ 'activo' if activo == 'mapa' }}" href="{{ url_for('mapa') }}">{{ icono('mapa') }}<span>Mapa</span></a>
+      <a class="nav-item {{ 'activo' if activo == 'equipos' }}" href="{{ url_for('panel') }}#equipos">{{ icono('monitor') }}<span>Equipos</span></a>
+      <p class="nav-titulo">Administración</p>
+      <a class="nav-item {{ 'activo' if activo == 'actualizaciones' }}" href="{{ url_for('actualizaciones') }}">{{ icono('descargar') }}<span>Actualizaciones</span></a>
+      <a class="nav-item {{ 'activo' if activo == 'ajustes' }}" href="{{ url_for('ajustes') }}">{{ icono('ajustes') }}<span>Ajustes</span></a>
+    </nav>
+
+    <div class="barra-pie">
+      <div class="tarjeta-usuario">
+        <span class="avatar">{{ (usuario or 'A')[0]|upper }}</span>
+        <span class="usuario-datos"><strong>{{ usuario }}</strong><small>Administrador</small></span>
+      </div>
+      <form method="post" action="{{ url_for('salir') }}">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+        <button type="submit" class="boton-salir">{{ icono('salir') }}<span>Cerrar sesión</span></button>
+      </form>
+    </div>
+  </aside>
+
+  <div class="zona">
+    <header class="barra-superior">
+      <button class="icono-boton solo-movil" id="btnMenu" type="button" aria-label="Abrir menú">{{ icono('menu') }}</button>
+      <div class="titulos">
+        <h1>{% block encabezado %}Panel{% endblock %}</h1>
+        <p>{% block subtitulo %}{% endblock %}</p>
+      </div>
+      <div class="acciones-cabecera">
+        {% block acciones %}{% endblock %}
+        <span class="chip-estado"><span class="punto"></span> Servidor activo</span>
+      </div>
+    </header>
+
+    <main class="principal">
+      <noscript><div class="aviso">{{ icono('alerta') }} Activa JavaScript para ver horas relativas y el mapa.</div></noscript>
+      {% block contenido %}{% endblock %}
+    </main>
+
+    <footer class="pie">
+      <span>{{ titulo_panel }} · Panel de control</span>
+      <span>v{{ version }}</span>
+    </footer>
+  </div>
+</div>
+<div class="velo" id="fondoMenu"></div>
+<script src="{{ url_for('static', filename='js/panel.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

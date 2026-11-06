@@ -1,0 +1,21 @@
+services:
+- type: web
+  name: unidad17
+  runtime: docker
+  plan: free
+  healthCheckPath: /salud
+  envVars:
+    - key: DATABASE_URL
+      sync: false
+    - key: UNIDAD17_URL_PUBLICA
+      value: "https://unidad17.onrender.com"
+    - key: UNIDAD17_CLAVE_API
+      generateValue: true
+    - key: UNIDAD17_CLAVE_SECRETA
+      generateValue: true
+    - key: UNIDAD17_CLAVE_ADMIN
+      generateValue: true
+    - key: UNIDAD17_PROXY
+      value: "1"
+    - key: UNIDAD17_COOKIE_SEGURA
+      value: "true"

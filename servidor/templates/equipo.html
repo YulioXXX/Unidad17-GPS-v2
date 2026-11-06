@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% from "_iconos.html" import icono %}
+
+{% block titulo_doc %}{{ equipo.hostname }}{% endblock %}
+{% block pagina %}equipo{% endblock %}
+{% block encabezado %}{{ equipo.hostname }}{% endblock %}
+{% block subtitulo %}Detalle, ubicación e historial del equipo{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}">
+{% endblock %}
+
+{% block acciones %}
+<a class="boton boton-suave" href="{{ url_for('panel') }}#equipos">{{ icono('panel') }}<span>Volver al panel</span></a>
+{% endblock %}
+
+{% block contenido %}
+{% with mensajes = get_flashed_messages(with_categories=true) %}
+  {% for categoria, mensaje in mensajes %}
+  <div class="alerta {{ 'ok' if categoria == 'ok' else 'error' }}">
+    {{ icono('check' if categoria == 'ok' else 'alerta') }}<span>{{ mensaje }}</span>
+  </div>
+  {% endfor %}
+{% endwith %}
+
+<nav class="migas" aria-label="Ruta">
+  <a href="{{ url_for('panel') }}">Panel</a>
+  {{ icono('chevron') }}
+  <a href="{{ url_for('mapa') }}">Mapa</a>
+  {{ icono('chevron') }}
+  <span>{{ equipo.hostname }}</span>
+</nav>
+
+<section class="rejilla-detalle">
+  <article class="tarjeta">
+    <div class="tarjeta-cabecera compacta">
+      <div><h2>Ubicación</h2><p>Última posición reportada</p></div>
+      {% if equipo.en_linea %}<span class="insignia gps">{{ icono('wifi') }} En línea</span>
+      {% else %}<span class="insignia neutra">Sin conexión</span>{% endif %}
+    </div>
+    {% if equipo.latitud is not none %}
+    <div class="ubicacion-principal">
+      <strong>{{ equipo.ciudad or 'Sin ciudad' }}</strong>
+      <span>{{ equipo.pais or '' }}</span>
+    </div>
+    <dl class="lista-datos">
+      <div><dt>Latitud</dt><dd class="mono">{{ '%.5f'|format(equipo.latitud) }}</dd></div>
+      <div><dt>Longitud</dt><dd class="mono">{{ '%.5f'|format(equipo.longitud) }}</dd></div>
+      <div><dt>Precisión</dt><dd>{% if equipo.precision_m %}{{ equipo.precision_m }} m{% else %}—{% endif %}</dd></div>
+      <div><dt>Origen</dt><dd>
+        {% if equipo.fuente == 'gps' %}<span class="insignia gps">{{ icono('satelite') }} GPS de Windows</span>
+        {% elif equipo.fuente == 'wifi' %}<span class="insignia wifi">{{ icono('wifi') }} Wi-Fi + Google</span>
+        {% elif equipo.fuente == 'ip' %}<span class="insignia ip">{{ icono('globo') }} Geolocalización por IP</span>
+        {% else %}<span class="insignia neutra">—</span>{% endif %}
+      </dd></div>
+    </dl>
+    {% else %}
+    <div class="vacio compacto">
+      <span class="vacio-icono">{{ icono('mapa') }}</span>
+      <p>Este equipo todavía no ha reportado una ubicación.</p>
+    </div>
+    {% endif %}
+  </article>
+
+  <article class="tarjeta">
+    <div class="tarjeta-cabecera compacta">
+      <div><h2>Equipo</h2><p>Identificación y hardware</p></div>
+    </div>
+    <dl class="lista-datos">
+      <div><dt>Hostname</dt><dd>{{ equipo.hostname }}</dd></div>
+      <div><dt>IP local</dt><dd class="mono">{{ equipo.ip_local or '—' }}</dd></div>
+      <div><dt>IP pública</dt><dd class="mono">{{ equipo.ip_publica or '—' }}</dd></div>
+      <div><dt>MAC</dt><dd class="mono">{{ equipo.mac or '—' }}</dd></div>
+      <div><dt>Sistema</dt><dd>{{ equipo.so or '—' }}</dd></div>
+      <div><dt>Procesador</dt><dd>{{ equipo.procesador or '—' }}</dd></div>
+      <div><dt>Arquitectura</dt><dd>{{ equipo.arquitectura or '—' }}</dd></div>
+      <div><dt>RAM</dt><dd>{% if equipo.ram_gb %}{{ '%.1f'|format(equipo.ram_gb) }} GB{% else %}—{% endif %}</dd></div>
+      <div><dt>Disco libre</dt><dd>{% if equipo.disco_libre_gb %}{{ '%.1f'|format(equipo.disco_libre_gb) }} GB{% else %}—{% endif %}</dd></div>
+    </dl>
+  </article>
+
+  <article class="tarjeta">
+    <div class="tarjeta-cabecera compacta">
+      <div><h2>Conexión</h2><p>Actividad del agente</p></div>
+    </div>
+    <dl class="lista-datos">
+      <div><dt>Estado</dt><dd><span class="estado-texto {{ 'ok' if equipo.en_linea else 'off' }}"><span class="punto-estado {{ 'en-linea' if equipo.en_linea else 'desconectado' }}"></span>{{ 'En línea' if equipo.en_linea else 'Sin conexión' }}</span></dd></div>
+      <div><dt>Última conexión</dt><dd>{{ equipo.ultima_exacta }}<small>{{ equipo.ultima_texto }}</small></dd></div>
+      <div><dt>Primera conexión</dt><dd>{{ equipo.primera_exacta }}</dd></div>
+      <div><dt>Reportes recibidos</dt><dd>{{ equipo.total_reportes }}</dd></div>
+      <div><dt>Versión del agente</dt><dd>{{ equipo.version_agente or '—' }}</dd></div>
+    </dl>
+  </article>
+
+  <article class="tarjeta">
+    <div class="tarjeta-cabecera compacta">
+      <div><h2>Acceso del agente</h2><p>Token propio de este equipo</p></div>
+      {% if estado_token == 'activo' %}<span class="insignia gps">{{ icono('check') }} Token activo</span>
+      {% elif estado_token == 'revocado' %}<span class="insignia neutra">Revocado</span>
+      {% elif estado_token == 'reenrolar' %}<span class="insignia wifi">Esperando re-enrolamiento</span>
+      {% else %}<span class="insignia neutra">Sin token</span>{% endif %}
+    </div>
+
+    {% if estado_token == 'activo' %}
+      <p class="texto">Este equipo reporta con un token único. Si lo pierdes de vista o sospechas de él, revócalo: dejará de poder reportar y no podrá volver a enrolarse por su cuenta.</p>
+      <form method="post" action="{{ url_for('equipo_token', equipo_id=equipo.id) }}" class="formulario">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+        <input type="hidden" name="accion" value="revocar">
+        <button class="boton boton-peligro" type="submit">{{ icono('x') }} Revocar acceso</button>
+      </form>
+      <div class="separador"></div>
+      <p class="ayuda">Si el agente se reinstaló y perdió su token, usa “Permitir re-enrolamiento”.</p>
+      <form method="post" action="{{ url_for('equipo_token', equipo_id=equipo.id) }}" class="formulario">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+        <input type="hidden" name="accion" value="reenrolar">
+        <button class="boton boton-suave" type="submit">{{ icono('actualizar') }} Permitir re-enrolamiento</button>
+      </form>
+    {% elif estado_token == 'revocado' %}
+      <p class="texto">El acceso de este equipo está bloqueado: sus reportes se rechazan y no puede pedir un token nuevo.</p>
+      <form method="post" action="{{ url_for('equipo_token', equipo_id=equipo.id) }}" class="formulario">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+        <input type="hidden" name="accion" value="reenrolar">
+        <button class="boton boton-suave" type="submit">{{ icono('actualizar') }} Permitir re-enrolamiento</button>
+      </form>
+    {% elif estado_token == 'reenrolar' %}
+      <p class="texto">El agente recibirá un token nuevo en su próximo ciclo de reporte.</p>
+    {% else %}
+      <p class="texto">Este equipo todavía reporta con la clave de agente compartida (agente anterior a la 1.0.11 o aún sin enrolar). Se enrola solo al actualizar el agente.</p>
+    {% endif %}
+  </article>
+</section>
+
+<section class="tarjeta tarjeta-mapa">
+  <div class="tarjeta-cabecera compacta">
+    <div><h2>Mapa</h2><p>Posición del equipo sobre el mapa</p></div>
+    <span class="insignia" id="mapa-resumen">
+      {% if equipo.latitud is not none %}Última posición conocida{% else %}Sin coordenadas{% endif %}
+    </span>
+  </div>
+  <div id="mapa" class="mapa" data-vista="equipo"></div>
+  <div id="mapa-error" class="mapa-error" hidden>
+    {{ icono('mapa') }}
+    <p id="mapa-error-texto">No se pudo cargar el mapa interactivo.</p>
+    <p id="mapa-error-enlace" class="mapa-error-ayuda" hidden>Puedes abrir la ubicación en
+      <a id="enlace-mapa-externo" href="#" target="_blank" rel="noopener">OpenStreetMap</a>.</p>
+  </div>
+</section>
+
+<section class="tarjeta">
+  <div class="tarjeta-cabecera compacta">
+    <div><h2>Historial de ubicaciones</h2><p>Últimos 100 puntos registrados</p></div>
+  </div>
+  {% if historial %}
+  <div class="tabla-envoltura">
+    <table>
+      <thead>
+        <tr><th>Fecha</th><th>Ciudad</th><th>Coordenadas</th><th>Precisión</th><th>Origen</th></tr>
+      </thead>
+      <tbody>
+        {% for punto in historial %}
+        <tr>
+          <td>{{ punto.fecha_texto }}</td>
+          <td>{{ punto.ciudad or '—' }}{% if punto.pais %}, {{ punto.pais }}{% endif %}</td>
+          <td class="mono">{{ '%.5f'|format(punto.latitud) }}, {{ '%.5f'|format(punto.longitud) }}</td>
+          <td>{% if punto.precision_m %}{{ punto.precision_m }} m{% else %}—{% endif %}</td>
+          <td>
+            {% if punto.fuente == 'gps' %}<span class="insignia gps">GPS</span>
+            {% elif punto.fuente == 'wifi' %}<span class="insignia wifi">Wi-Fi</span>
+            {% elif punto.fuente == 'ip' %}<span class="insignia ip">IP</span>
+            {% else %}<span class="insignia neutra">—</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="vacio compacto"><p>Sin puntos de historial todavía.</p></div>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script type="application/json" id="datos-mapa">{{ mapa|tojson }}</script>
+<script src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}"></script>
+{% endblock %}

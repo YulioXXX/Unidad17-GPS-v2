@@ -1,0 +1,69 @@
+{% from "_iconos.html" import icono %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cambiar contraseña · {{ titulo_panel }}</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/favicon.svg') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/estilos.css') }}">
+</head>
+<body class="cuerpo-login">
+{% include "_sprite.html" %}
+<main class="login-envoltura">
+  <section class="login-tarjeta">
+    <aside class="login-lateral">
+      <img class="login-logo" src="{{ url_for('static', filename='img/logo.svg') }}" alt="">
+      <div>
+        <h2>{{ titulo_panel }}</h2>
+        <p>{{ subtitulo_panel }}</p>
+        <ul class="login-lista">
+          <li>{{ icono('candado') }} La contraseña inicial es pública</li>
+          <li>{{ icono('escudo') }} Elige una propia para continuar</li>
+        </ul>
+      </div>
+      <span class="login-lateral-pie">Uso interno · Personal autorizado</span>
+    </aside>
+
+    <div class="login-formulario">
+      <h1>Cambia tu contraseña</h1>
+      <p class="login-bajada">Estás usando la contraseña inicial. Antes de entrar al panel debes definir una nueva (mínimo {{ min_clave }} caracteres).</p>
+
+      {% if error %}
+      <div class="alerta error">{{ icono('alerta') }}<span>{{ error }}</span></div>
+      {% endif %}
+
+      <form method="post" action="{{ url_for('cambiar_clave_inicial') }}">
+        <label class="campo-etiqueta" for="actual">Contraseña actual</label>
+        <div class="campo">
+          {{ icono('candado') }}
+          <input id="actual" name="actual" type="password" required autofocus autocomplete="current-password">
+        </div>
+
+        <label class="campo-etiqueta" for="nueva">Nueva contraseña</label>
+        <div class="campo">
+          {{ icono('candado') }}
+          <input id="nueva" name="nueva" type="password" minlength="{{ min_clave }}" required autocomplete="new-password">
+        </div>
+
+        <label class="campo-etiqueta" for="repetir">Repetir nueva contraseña</label>
+        <div class="campo">
+          {{ icono('candado') }}
+          <input id="repetir" name="repetir" type="password" minlength="{{ min_clave }}" required autocomplete="new-password">
+        </div>
+
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+        <button class="boton-principal" type="submit">Guardar y entrar {{ icono('chevron') }}</button>
+      </form>
+
+      <form method="post" action="{{ url_for('salir') }}">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+        <button class="boton boton-suave" type="submit">{{ icono('salir') }} Cerrar sesión</button>
+      </form>
+
+      <p class="login-pie">{{ titulo_panel }} · v{{ version }}</p>
+    </div>
+  </section>
+</main>
+</body>
+</html>
