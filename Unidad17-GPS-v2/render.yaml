@@ -6,7 +6,7 @@ services:
   healthCheckPath: /salud
   envVars:
     - key: DATABASE_URL
-      value: "postgresql://postgres.wkkwwtzyygcalaapyjdh:Unidad_GPS_17.@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
+      value: ""
     - key: UNIDAD17_URL_PUBLICA
       value: "https://unidad17.onrender.com"
     - key: UNIDAD17_CLAVE_API
